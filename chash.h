@@ -15,8 +15,10 @@ typedef struct
 // node like one book
 typedef struct
 {
-    const char *key;
     void *value;
     size_t value_len;
     node_t *next;  // maybe there is some type chain
+    unsigned int hash; // string hash
+    unsigned char flag; 
+    char key[0];  // maybe sds later
 } node_t;
