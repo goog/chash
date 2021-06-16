@@ -1,7 +1,7 @@
 # chash
 
-the chash is what i want to do a hash library.  
-i have two different points. 
+chash is a hash library.  
+which has two different points: 
 
-- different from what i have seen  
-- it bases on allocated array
+- different from others i have seen from jwhash to LUA's hash idea 
+- it is based on allocated array to handle the hash collisoin
