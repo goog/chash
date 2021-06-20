@@ -51,6 +51,5 @@ void chash_destory(hash_t *hash);
 
 
 int chash_rehash(hash_t *hash);
-
-// define one iteror 
+ 
 

@@ -84,7 +84,7 @@ int chash_add(hash_t *hashmap, char *key, void *value)
 
     node_t *node = NULL;
     mini_node_t *mini_node_array = NULL;
-    int last_index = 0; // last index of mini node array
+    int last_index = 0; // last valid index of mini node array
     unsigned int hash_val = JSHash(key);
     unsigned int index = hash_val % (hashmap->capacity);
     node = &(hashmap->buckets[index]);
@@ -99,7 +99,7 @@ int chash_add(hash_t *hashmap, char *key, void *value)
     }
     else
     {
-        printf("bucket[%d] have key string\n", index);
+        printf("bucket[%d] has key\n", index);
 
         if(node->hash == hash_val && strcmp(node->key, key) == 0)
         {
@@ -113,8 +113,7 @@ int chash_add(hash_t *hashmap, char *key, void *value)
             return RET_OK;
         }
             
-        //ADD to the mini node allocated array
-
+        //check key within the mini node array
         int i = 0;
         for(i = 0; i < node->dyn_array_used; i++)
         {
@@ -128,8 +127,8 @@ int chash_add(hash_t *hashmap, char *key, void *value)
             }
         }
 
-        // no memory remain, have to add node
-        if(i == node->dyn_array_used && node->dyn_array_used == node->dyn_array_size)
+        // no memory space remain, have to allocate node memory
+        if(node->dyn_array_used == node->dyn_array_size)
         {
 
             if(node->next == NULL)
@@ -219,10 +218,6 @@ void *chash_get(hash_t *hashmap, char *key)
                 if(strcmp(key, node->next[i].key) == 0)
                 {
                     printf("find key in mini node array\n");
-                    if(node->next[i].value == NULL)
-                    {
-                        printf("the found value pointer is null\n");
-                    }
 
                     return node->next[i].value;
                 }
@@ -258,7 +253,7 @@ int chash_delete(hash_t *hashmap, char *key)
     
     if(node->key == NULL)
     {
-        printf("the bucket have no key\n");
+        printf("the bucket key is empty\n");
         return RET_FAIL;
     }
     else
@@ -316,20 +311,55 @@ int chash_delete(hash_t *hashmap, char *key)
 
 
 
+void chash_destory(hash_t *hashmap)
+{
+
+    if(hashmap == NULL)
+        return;
+
+    int i;
+    mini_node_t *p = NULL;
+    
+    for(i = 0; i < hashmap->capacity; i++)
+    {
+        p = hashmap->buckets[i].next;
+        if(p != NULL)
+        {
+            free(p);
+        }
+    }
+
+    free(hashmap->buckets);
+    free(hashmap);
+}
+
+
 int main()
 {
     printf("hello hash\n");
 
-
-
     hash_t *test_hash = chash_new(100);
 
-    int value1 = 10;
-    int value2 = 20;
-    int value3 = 30;
-    chash_add(test_hash, "abc", &value1);
-    chash_add(test_hash, "hash", &value2);
-    chash_add(test_hash, "thu", &value3);
+    char *key1 = calloc(1, 20);
+    strncpy(key1, "abc", 3);
+
+    char *key2 = calloc(1, 20);
+    strncpy(key2, "hash", 4);
+
+    char *key3 = calloc(1, 20);
+    strncpy(key3, "thu", 3);
+    
+    int *value1 = malloc(sizeof(int));
+    *value1 = 10;
+    int *value2 = malloc(sizeof(int));
+    *value2 = 20;
+    int *value3 = malloc(sizeof(int));
+    *value3 = 30;
+
+    
+    chash_add(test_hash, key1, value1);
+    chash_add(test_hash, key2, value2);
+    chash_add(test_hash, key3, value3);
 
     int *temp = NULL;
     temp = chash_get(test_hash, "thu");
@@ -340,4 +370,10 @@ int main()
     int ret = chash_delete(test_hash, "thu");
     if(ret == 0)
         printf("del key successful\n");
+
+    ret = chash_delete(test_hash, "fookey");
+    if(ret == 0)
+        printf("del key successful\n");
+
+    chash_destory(test_hash);
 }
