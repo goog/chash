@@ -95,11 +95,10 @@ int chash_add(hash_t *hashmap, char *key, void *value)
         node->key = key;
         node->value = value;
         node->hash = hash_val;  // ASSIGN HASH VALUE
-        node->next = NULL;  // mini node array is empty
+        //KEEP next field unchange
     }
     else
     {
-        printf("bucket[%d] has key\n", index);
 
         if(node->hash == hash_val && strcmp(node->key, key) == 0)
         {
@@ -120,7 +119,7 @@ int chash_add(hash_t *hashmap, char *key, void *value)
 
             if(node->next[i].hash == hash_val && strcmp(node->next[i].key, key) == 0)
             {
-                printf("update value\n");
+                //printf("update value\n");
                 free(node->next[i].value);
                 node->next[i].value = value;
                 return RET_OK;
@@ -311,6 +310,32 @@ int chash_delete(hash_t *hashmap, char *key)
 
 
 
+// free internal key and value within mini node array 
+void chash_free_mini_array_kv(mini_node_t *head, int size)
+{
+    if(head == NULL)
+        return;
+
+    int i = 0;
+    mini_node_t *p_tmp = NULL;
+    
+    for(i = 0; i < size; i++)
+    {
+        p_tmp = head + i;
+        if(p_tmp->key != NULL)
+        {
+            free(p_tmp->key);
+            p_tmp->key = NULL;
+        }
+
+        if(p_tmp->value != NULL)
+        {
+            free(p_tmp->value);
+            p_tmp->value = NULL;
+        }
+    }
+}
+
 void chash_destory(hash_t *hashmap)
 {
 
@@ -325,11 +350,15 @@ void chash_destory(hash_t *hashmap)
         p = hashmap->buckets[i].next;
         if(p != NULL)
         {
+            chash_free_mini_array_kv(p, hashmap->buckets[i].dyn_array_size);
             free(p);
         }
     }
 
     free(hashmap->buckets);
+    hashmap->buckets = NULL;
+    hashmap->capacity = 0;
+    
     free(hashmap);
 }
 
