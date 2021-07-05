@@ -8,6 +8,15 @@
 #define RET_FAIL -1
 
 
+#define CHASH_FREE(ptr)  do{ \
+    if(ptr != NULL)   \
+    {                 \
+        free(ptr);    \
+        ptr = NULL;   \
+    }                 \
+}while(0)
+
+
 
 //djb2
 unsigned long
@@ -75,7 +84,7 @@ hash_t *chash_new(unsigned int capacity)
 
 int chash_add(hash_t *hashmap, char *key, void *value)
 {
-    if(hashmap == NULL || key == NULL || value == NULL)
+    if(hashmap == NULL || key == NULL)
     {
         printf("parameter error at %s\n", __FUNCTION__);
         return RET_FAIL;
@@ -102,11 +111,8 @@ int chash_add(hash_t *hashmap, char *key, void *value)
 
         if(node->hash == hash_val && strcmp(node->key, key) == 0)
         {
-            printf("update value\n");
-            if(node->value != NULL)
-            {
-                free(node->value);
-            }    
+            //printf("update value\n");
+            CHASH_FREE(node->value);  
             
             node->value = value;
             return RET_OK;
@@ -120,7 +126,7 @@ int chash_add(hash_t *hashmap, char *key, void *value)
             if(node->next[i].hash == hash_val && strcmp(node->next[i].key, key) == 0)
             {
                 //printf("update value\n");
-                free(node->next[i].value);
+                CHASH_FREE(node->next[i].value);
                 node->next[i].value = value;
                 return RET_OK;
             }
@@ -161,15 +167,16 @@ int chash_add(hash_t *hashmap, char *key, void *value)
 
         // did not find it then store key-value to the last index of array
         last_index = node->dyn_array_used;
-        mini_node_array[last_index].key = key;
-        mini_node_array[last_index].value = value;
-        mini_node_array[last_index].hash = hash_val;
+
+        mini_node_t *last_node = mini_node_array + last_index;
+
+        last_node->key = key;
+        last_node->value = value;
+        last_node->hash = hash_val;
 
         // add kv successful, counter increased
         node->dyn_array_used++;
     }
-
-    
 
 
     return RET_OK;
@@ -192,41 +199,24 @@ void *chash_get(hash_t *hashmap, char *key)
     unsigned int index = hash_val % (hashmap->capacity);
     node = &(hashmap->buckets[index]);
     
-    if(node->key == NULL)
+    
+    if(strcmp(key, node->key) == 0)
     {
-        //printf("does not get the value\n");
-        return NULL;
+        return node->value;
     }
-    else
+    
+    //find in mini node array
+    int i = 0;
+    for(i = 0; i < node->dyn_array_used; i++)
     {
-        //printf("search the key\n");
-
-        // there is no mini node
-        if(node->dyn_array_used == 0)
+        if(strcmp(key, node->next[i].key) == 0)
         {
-            if(strcmp(key, node->key) == 0)
-            {
-                return node->value;
-            }
-        }
-        else
-        {
-            int i = 0;
-            for(i = 0; i < node->dyn_array_used; i++)
-            {
-                if(strcmp(key, node->next[i].key) == 0)
-                {
-                    printf("find key in mini node array\n");
-
-                    return node->next[i].value;
-                }
-                
-            }
-
+            //printf("find key in mini node array\n");
+            return node->next[i].value;
         }
         
-
     }
+ 
 
     return NULL;
 }
