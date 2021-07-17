@@ -48,6 +48,19 @@ JSHash(char *str)
 }
 
 
+// handle bucket key is null case
+int chash_strcmp(const char *s1, const char *s2)
+{
+    if(s1 == NULL || s2 == NULL)
+    {
+        printf("some key is null\n");
+        return -2;  // set to a not zero number
+    }
+    else
+    {
+        return strcmp(s1, s2);
+    }
+}
 
 
 hash_t *chash_new(unsigned int capacity)
@@ -113,7 +126,6 @@ int chash_add(hash_t *hashmap, char *key, void *value)
         {
             //printf("update value\n");
             CHASH_FREE(node->value);  
-            
             node->value = value;
             return RET_OK;
         }
@@ -200,7 +212,7 @@ void *chash_get(hash_t *hashmap, char *key)
     node = &(hashmap->buckets[index]);
     
     
-    if(strcmp(key, node->key) == 0)
+    if(chash_strcmp(key, node->key) == 0)
     {
         return node->value;
     }
@@ -217,7 +229,6 @@ void *chash_get(hash_t *hashmap, char *key)
         
     }
  
-
     return NULL;
 }
 
@@ -240,60 +251,52 @@ int chash_delete(hash_t *hashmap, char *key)
     unsigned int index = hash_val % (hashmap->capacity);
     node = &(hashmap->buckets[index]);
     
-    if(node->key == NULL)
-    {
-        printf("the bucket key is empty\n");
-        return RET_FAIL;
-    }
-    else
-    {
         
-        if(strcmp(key, node->key) == 0)
-        {
-            // FREE key value memory on heap
-            free(node->key);
-            node->key = NULL;
+    if(chash_strcmp(key, node->key) == 0)
+    {
+        // FREE key value memory on heap
+        free(node->key);
+        node->key = NULL;
 
-            if(node->value != NULL)
+        if(node->value != NULL)
+        {
+            free(node->value);
+            node->value = NULL;
+        }
+        
+        node->hash = 0;
+        return RET_OK;
+    }
+
+    
+    
+    int i = 0;
+    for(i = 0; i < node->dyn_array_used; i++)
+    {
+        if(strcmp(key, node->next[i].key) == 0)
+        {
+            printf("find key in mini node array\n");
+
+            free(node->next[i].key);
+            node->next[i].key = NULL;
+            free(node->next[i].value);
+            node->next[i].value = NULL;
+
+            // node i is not the last one element
+            if(i < node->dyn_array_used - 1)
             {
-                free(node->value);
-                node->value = NULL;
+                last_index = node->dyn_array_used - 1;
+                memcpy(&node->next[i], &node->next[last_index], sizeof(mini_node_t));
+                memset(&node->next[last_index], 0, sizeof(mini_node_t));
             }
             
-            node->hash = 0;
+
             return RET_OK;
         }
+        
+    }    
     
-        
-        
-        int i = 0;
-        for(i = 0; i < node->dyn_array_used; i++)
-        {
-            if(strcmp(key, node->next[i].key) == 0)
-            {
-                printf("find key in mini node array\n");
-
-                free(node->next[i].key);
-                node->next[i].key = NULL;
-                free(node->next[i].value);
-                node->next[i].value = NULL;
-
-                // node i is not the last one element
-                if(i < node->dyn_array_used - 1)
-                {
-                    last_index = node->dyn_array_used - 1;
-                    memcpy(&node->next[i], &node->next[last_index], sizeof(mini_node_t));
-                    memset(&node->next[last_index], 0, sizeof(mini_node_t));
-                }
-                
-
-                return RET_OK;
-            }
-            
-        }    
-        
-
-    }
+    
 
     return RET_FAIL;
 }
@@ -394,5 +397,13 @@ int main()
     if(ret == 0)
         printf("del key successful\n");
 
+
+    temp = chash_get(test_hash, "thu");
+    if(temp)
+        printf("get the hash %d\n", *temp);
+    else
+        printf("get the hash null\n");
+    
+    
     chash_destory(test_hash);
 }
